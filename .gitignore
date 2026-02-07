@@ -1,0 +1,32 @@
+
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# TypeScript
+*.tsbuildinfo
+dist/
+
+# Database (DON'T commit customer data!)
+data/local.db
+data/local.db-wal
+data/local.db-shm
+data/backups/*.db
+
+# Environment
+.env
+.env*.local
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
