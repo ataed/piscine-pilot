@@ -16,6 +16,8 @@ import { HTTP_STATUS, ERROR_CODES } from "../shared/types";
 import type { ApiResponse } from "../shared/types";
 import { toISODateString } from "../shared/type-guards";
 
+import authRoutes from "./routes/auth";
+
 // ============================================
 // ENVIRONMENT CONFIGURATION
 // ============================================
@@ -109,6 +111,11 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
   next();
 });
+// ============================================
+// AUTH ROUTES
+// ============================================
+
+app.use("/api/local/auth", authRoutes);
 
 // ============================================
 // HEALTH CHECK ENDPOINT

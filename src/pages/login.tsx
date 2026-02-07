@@ -1,0 +1,398 @@
+/**
+ * Login Page
+ * Staff authentication with username and PIN
+ */
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import { useAuth } from '../lib/auth-context';
+
+export default function Login() {
+  const [username, setUsername] = useState('');
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const { login, isAuthenticated } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/');
+    }
+  }, [isAuthenticated, router]);
+
+  const handlePinClick = (digit: string) => {
+    if (pin.length < 4) {
+      setPin(pin + digit);
+    }
+  };
+
+  const handleBackspace = () => {
+    setPin(pin.slice(0, -1));
+  };
+
+  const handleClear = () => {
+    setUsername('');
+    setPin('');
+    setError('');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!username) {
+      setError('Veuillez entrer votre nom d\'utilisateur');
+      return;
+    }
+
+    if (pin.length !== 4) {
+      setError('Le code PIN doit contenir 4 chiffres');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    const success = await login(username, pin);
+
+    if (success) {
+      router.push('/');
+    } else {
+      setError('Nom d\'utilisateur ou code PIN incorrect');
+      setPin('');
+    }
+
+    setLoading(false);
+  };
+
+  return (
+    <div className="login-container">
+      <div className="login-box">
+        {/* Header */}
+        <div className="login-header">
+          <div className="logo-circle">
+            <img src="/logo.webp" alt="Club Tangerois" className="logo-image" />
+          </div>
+          <h1>CLUB TANGEROIS</h1>
+          <p>Connexion Personnel</p>
+        </div>
+
+        {/* Login Form */}
+        <form onSubmit={handleSubmit} className="login-form">
+          {/* Username */}
+          <div className="form-group">
+            <label>Nom d'utilisateur</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value.toLowerCase())}
+              placeholder="Entrez votre nom d'utilisateur"
+              className="form-input"
+              autoFocus
+              disabled={loading}
+            />
+          </div>
+
+          {/* PIN Display */}
+          <div className="form-group">
+            <label>Code PIN (4 chiffres)</label>
+            <div className="pin-display">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="pin-dot">
+                  {pin.length > i ? '●' : '○'}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* PIN Pad */}
+          <div className="pin-pad">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
+              <button
+                key={digit}
+                type="button"
+                onClick={() => handlePinClick(digit.toString())}
+                className="pin-button"
+                disabled={loading || pin.length >= 4}
+              >
+                {digit}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={handleClear}
+              className="pin-button clear"
+              disabled={loading}
+            >
+              ✕
+            </button>
+            <button
+              type="button"
+              onClick={() => handlePinClick('0')}
+              className="pin-button"
+              disabled={loading || pin.length >= 4}
+            >
+              0
+            </button>
+            <button
+              type="button"
+              onClick={handleBackspace}
+              className="pin-button backspace"
+              disabled={loading || pin.length === 0}
+            >
+              ⌫
+            </button>
+          </div>
+
+          {/* Error Message */}
+          {error && <div className="error-message">{error}</div>}
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            className="login-button"
+            disabled={loading || !username || pin.length !== 4}
+          >
+            {loading ? '⏳ Connexion...' : '🔓 Se connecter'}
+          </button>
+        </form>
+
+        {/* Default Credentials Info */}
+        <div className="info-box">
+          <p>👤 Compte par défaut: <strong>admin</strong></p>
+          <p>🔑 PIN: <strong>1234</strong></p>
+        </div>
+      </div>
+
+      <style jsx>{`
+        .login-container {
+          min-height: 100vh;
+          background: linear-gradient(135deg, #2d6d56 0%, #3d896c 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+        }
+
+        .login-box {
+          background: white;
+          border-radius: 20px;
+          padding: 40px;
+          max-width: 450px;
+          width: 100%;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-header {
+          text-align: center;
+          margin-bottom: 40px;
+        }
+
+        .logo-circle {
+          width: 100px;
+          height: 100px;
+          border-radius: 50%;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 20px;
+          border: 3px solid #3d896c;
+          background: white;
+        }
+
+        .logo-image {
+          width: 140%;
+          height: 140%;
+          object-fit: cover;
+        }
+
+        .login-header h1 {
+          margin: 0;
+          font-size: 28px;
+          color: #2d6d56;
+          font-weight: 700;
+        }
+
+        .login-header p {
+          margin: 8px 0 0 0;
+          color: #666;
+          font-size: 16px;
+        }
+
+        .login-form {
+          margin-top: 30px;
+        }
+
+        .form-group {
+          margin-bottom: 25px;
+        }
+
+        .form-group label {
+          display: block;
+          margin-bottom: 10px;
+          font-weight: 600;
+          color: #333;
+          font-size: 14px;
+        }
+
+        .form-input {
+          width: 100%;
+          padding: 15px;
+          border: 2px solid #e0e0e0;
+          border-radius: 10px;
+          font-size: 16px;
+          transition: border 0.3s;
+        }
+
+        .form-input:focus {
+          outline: none;
+          border-color: #3d896c;
+        }
+
+        .pin-display {
+          display: flex;
+          justify-content: center;
+          gap: 20px;
+          padding: 20px;
+          background: #f8f9fa;
+          border-radius: 10px;
+        }
+
+        .pin-dot {
+          font-size: 32px;
+          color: #3d896c;
+        }
+
+        .pin-pad {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          margin: 25px 0;
+        }
+
+        .pin-button {
+          padding: 20px;
+          font-size: 24px;
+          font-weight: 600;
+          background: #f8f9fa;
+          border: 2px solid #e0e0e0;
+          border-radius: 12px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .pin-button:hover:not(:disabled) {
+          background: #3d896c;
+          color: white;
+          border-color: #3d896c;
+          transform: scale(1.05);
+        }
+
+        .pin-button:active:not(:disabled) {
+          transform: scale(0.95);
+        }
+
+        .pin-button:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+
+        .pin-button.clear {
+          background: #fee2e2;
+          color: #dc2626;
+          border-color: #fca5a5;
+        }
+
+        .pin-button.clear:hover:not(:disabled) {
+          background: #dc2626;
+          color: white;
+          border-color: #dc2626;
+        }
+
+        .pin-button.backspace {
+          background: #fef3c7;
+          color: #d97706;
+          border-color: #fde68a;
+        }
+
+        .pin-button.backspace:hover:not(:disabled) {
+          background: #d97706;
+          color: white;
+          border-color: #d97706;
+        }
+
+        .error-message {
+          background: #fee2e2;
+          color: #dc2626;
+          padding: 15px;
+          border-radius: 10px;
+          margin-bottom: 20px;
+          text-align: center;
+          font-weight: 600;
+          border: 2px solid #fca5a5;
+        }
+
+        .login-button {
+          width: 100%;
+          padding: 18px;
+          background: linear-gradient(135deg, #3d896c 0%, #2d6d56 100%);
+          color: white;
+          border: none;
+          border-radius: 12px;
+          font-size: 18px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.3s;
+          box-shadow: 0 4px 15px rgba(61, 137, 108, 0.4);
+        }
+
+        .login-button:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(61, 137, 108, 0.5);
+        }
+
+        .login-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        .info-box {
+          margin-top: 25px;
+          padding: 15px;
+          background: #f0f9ff;
+          border: 2px solid #bae6fd;
+          border-radius: 10px;
+          font-size: 14px;
+          color: #0369a1;
+          text-align: center;
+        }
+
+        .info-box p {
+          margin: 5px 0;
+        }
+
+        .info-box strong {
+          color: #0c4a6e;
+        }
+
+        @media (max-width: 500px) {
+          .login-box {
+            padding: 30px 20px;
+          }
+
+          .pin-pad {
+            gap: 8px;
+          }
+
+          .pin-button {
+            padding: 15px;
+            font-size: 20px;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}

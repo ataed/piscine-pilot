@@ -398,6 +398,9 @@ export const ERROR_CODES = {
 
   /** Unexpected server error (500) */
   INTERNAL_ERROR: "INTERNAL_ERROR",
+
+  /** Forbidden access (403) */
+  FORBIDDEN: "FORBIDDEN",
 } as const;
 
 /**
