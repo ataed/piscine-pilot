@@ -148,7 +148,11 @@ app.get("/api/health", (_req: Request, res: Response) => {
     return res.status(HTTP_STATUS.SERVICE_UNAVAILABLE).json(response);
   }
 });
+// ============================================
+// STATIC FILES (PUBLIC FOLDER)
+// ============================================
 
+app.use(express.static(path.join(__dirname, "../public")));
 // ============================================
 // API ROUTES
 // ============================================
