@@ -3,13 +3,13 @@
  * /api/local/auth/*
  */
 
-import { Router, Request, Response } from 'express';
-import { authService } from '../utils/auth-service';
-import { logger } from '../utils/logger';
-import { HTTP_STATUS, ERROR_CODES } from '../../shared/types';
-import type { ApiResponse } from '../../shared/types';
-import { toISODateString } from '../../shared/type-guards';
-import { z } from 'zod';
+import { Router, Request, Response } from "express";
+import { authService } from "../utils/auth-service";
+import { logger } from "../utils/logger";
+import { HTTP_STATUS, ERROR_CODES } from "../../shared/types";
+import type { ApiResponse } from "../../shared/types";
+import { toISODateString } from "../../shared/type-guards";
+import { z } from "zod";
 
 const router = Router();
 
@@ -20,10 +20,13 @@ const router = Router();
 
 const LoginSchema = z.object({
   username: z.string().min(3).max(50),
-  pin: z.string().length(4).regex(/^\d{4}$/, 'PIN must be 4 digits'),
+  pin: z
+    .string()
+    .length(4)
+    .regex(/^\d{4}$/, "PIN must be 4 digits"),
 });
 
-router.post('/login', (req: Request, res: Response) => {
+router.post("/login", (req: Request, res: Response) => {
   try {
     const validation = LoginSchema.safeParse(req.body);
 
@@ -32,7 +35,7 @@ router.post('/login', (req: Request, res: Response) => {
         success: false,
         error: {
           code: ERROR_CODES.VALIDATION_ERROR,
-          message: 'Invalid credentials format',
+          message: "Invalid credentials format",
           details: validation.error.issues,
         },
         timestamp: toISODateString(new Date()),
@@ -41,7 +44,7 @@ router.post('/login', (req: Request, res: Response) => {
     }
 
     const { username, pin } = validation.data;
-    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+    const clientIp = req.ip || req.socket.remoteAddress || "unknown";
 
     const result = authService.login(username, pin, clientIp);
 
@@ -50,13 +53,27 @@ router.post('/login', (req: Request, res: Response) => {
         success: false,
         error: {
           code: ERROR_CODES.UNAUTHORIZED,
-          message: 'Invalid username or PIN',
+          message: "Invalid username or PIN",
         },
         timestamp: toISODateString(new Date()),
       };
       return res.status(HTTP_STATUS.UNAUTHORIZED).json(response);
     }
 
+    // Check if it's a lockout error
+    if ("error" in result) {
+      const response: ApiResponse<never> = {
+        success: false,
+        error: {
+          code: ERROR_CODES.TOO_MANY_REQUESTS,
+          message: result.error, // This is the lockout message string
+        },
+        timestamp: toISODateString(new Date()),
+      };
+      return res.status(HTTP_STATUS.TOO_MANY_REQUESTS).json(response);
+    }
+
+    // Success
     const response: ApiResponse<typeof result> = {
       success: true,
       data: result,
@@ -65,13 +82,13 @@ router.post('/login', (req: Request, res: Response) => {
 
     return res.status(HTTP_STATUS.OK).json(response);
   } catch (error) {
-    logger.error('Login endpoint error', error as Error);
+    logger.error("Login endpoint error", error as Error);
 
     const response: ApiResponse<never> = {
       success: false,
       error: {
         code: ERROR_CODES.INTERNAL_ERROR,
-        message: 'Authentication failed',
+        message: "Authentication failed",
       },
       timestamp: toISODateString(new Date()),
     };
@@ -85,16 +102,16 @@ router.post('/login', (req: Request, res: Response) => {
 // Destroy session
 // ============================================
 
-router.post('/logout', (req: Request, res: Response) => {
+router.post("/logout", (req: Request, res: Response) => {
   try {
-    const sessionId = req.headers['x-session-id'] as string;
+    const sessionId = req.headers["x-session-id"] as string;
 
     if (!sessionId) {
       const response: ApiResponse<never> = {
         success: false,
         error: {
           code: ERROR_CODES.UNAUTHORIZED,
-          message: 'No session provided',
+          message: "No session provided",
         },
         timestamp: toISODateString(new Date()),
       };
@@ -111,13 +128,13 @@ router.post('/logout', (req: Request, res: Response) => {
 
     return res.status(HTTP_STATUS.OK).json(response);
   } catch (error) {
-    logger.error('Logout endpoint error', error as Error);
+    logger.error("Logout endpoint error", error as Error);
 
     const response: ApiResponse<never> = {
       success: false,
       error: {
         code: ERROR_CODES.INTERNAL_ERROR,
-        message: 'Logout failed',
+        message: "Logout failed",
       },
       timestamp: toISODateString(new Date()),
     };
@@ -131,16 +148,16 @@ router.post('/logout', (req: Request, res: Response) => {
 // Get current user from session
 // ============================================
 
-router.get('/me', (req: Request, res: Response) => {
+router.get("/me", (req: Request, res: Response) => {
   try {
-    const sessionId = req.headers['x-session-id'] as string;
+    const sessionId = req.headers["x-session-id"] as string;
 
     if (!sessionId) {
       const response: ApiResponse<never> = {
         success: false,
         error: {
           code: ERROR_CODES.UNAUTHORIZED,
-          message: 'No session provided',
+          message: "No session provided",
         },
         timestamp: toISODateString(new Date()),
       };
@@ -154,7 +171,7 @@ router.get('/me', (req: Request, res: Response) => {
         success: false,
         error: {
           code: ERROR_CODES.UNAUTHORIZED,
-          message: 'Invalid or expired session',
+          message: "Invalid or expired session",
         },
         timestamp: toISODateString(new Date()),
       };
@@ -169,13 +186,13 @@ router.get('/me', (req: Request, res: Response) => {
 
     return res.status(HTTP_STATUS.OK).json(response);
   } catch (error) {
-    logger.error('Get user endpoint error', error as Error);
+    logger.error("Get user endpoint error", error as Error);
 
     const response: ApiResponse<never> = {
       success: false,
       error: {
         code: ERROR_CODES.INTERNAL_ERROR,
-        message: 'Failed to get user',
+        message: "Failed to get user",
       },
       timestamp: toISODateString(new Date()),
     };
@@ -190,20 +207,26 @@ router.get('/me', (req: Request, res: Response) => {
 // ============================================
 
 const ChangePinSchema = z.object({
-  old_pin: z.string().length(4).regex(/^\d{4}$/),
-  new_pin: z.string().length(4).regex(/^\d{4}$/),
+  old_pin: z
+    .string()
+    .length(4)
+    .regex(/^\d{4}$/),
+  new_pin: z
+    .string()
+    .length(4)
+    .regex(/^\d{4}$/),
 });
 
-router.post('/change-pin', (req: Request, res: Response) => {
+router.post("/change-pin", (req: Request, res: Response) => {
   try {
-    const sessionId = req.headers['x-session-id'] as string;
+    const sessionId = req.headers["x-session-id"] as string;
 
     if (!sessionId) {
       const response: ApiResponse<never> = {
         success: false,
         error: {
           code: ERROR_CODES.UNAUTHORIZED,
-          message: 'No session provided',
+          message: "No session provided",
         },
         timestamp: toISODateString(new Date()),
       };
@@ -217,7 +240,7 @@ router.post('/change-pin', (req: Request, res: Response) => {
         success: false,
         error: {
           code: ERROR_CODES.UNAUTHORIZED,
-          message: 'Invalid session',
+          message: "Invalid session",
         },
         timestamp: toISODateString(new Date()),
       };
@@ -231,7 +254,7 @@ router.post('/change-pin', (req: Request, res: Response) => {
         success: false,
         error: {
           code: ERROR_CODES.VALIDATION_ERROR,
-          message: 'Invalid PIN format',
+          message: "Invalid PIN format",
           details: validation.error.issues,
         },
         timestamp: toISODateString(new Date()),
@@ -247,7 +270,7 @@ router.post('/change-pin', (req: Request, res: Response) => {
         success: false,
         error: {
           code: ERROR_CODES.VALIDATION_ERROR,
-          message: 'Incorrect old PIN',
+          message: "Incorrect old PIN",
         },
         timestamp: toISODateString(new Date()),
       };
@@ -262,13 +285,13 @@ router.post('/change-pin', (req: Request, res: Response) => {
 
     return res.status(HTTP_STATUS.OK).json(response);
   } catch (error) {
-    logger.error('Change PIN endpoint error', error as Error);
+    logger.error("Change PIN endpoint error", error as Error);
 
     const response: ApiResponse<never> = {
       success: false,
       error: {
         code: ERROR_CODES.INTERNAL_ERROR,
-        message: 'Failed to change PIN',
+        message: "Failed to change PIN",
       },
       timestamp: toISODateString(new Date()),
     };
@@ -282,16 +305,16 @@ router.post('/change-pin', (req: Request, res: Response) => {
 // List all users
 // ============================================
 
-router.get('/users', (req: Request, res: Response) => {
+router.get("/users", (req: Request, res: Response) => {
   try {
-    const sessionId = req.headers['x-session-id'] as string;
+    const sessionId = req.headers["x-session-id"] as string;
 
     if (!sessionId) {
       const response: ApiResponse<never> = {
         success: false,
         error: {
           code: ERROR_CODES.UNAUTHORIZED,
-          message: 'No session provided',
+          message: "No session provided",
         },
         timestamp: toISODateString(new Date()),
       };
@@ -300,12 +323,12 @@ router.get('/users', (req: Request, res: Response) => {
 
     const user = authService.validateSession(sessionId);
 
-    if (!user || !authService.hasRole(user, 'admin')) {
+    if (!user || !authService.hasRole(user, "admin")) {
       const response: ApiResponse<never> = {
         success: false,
         error: {
           code: ERROR_CODES.FORBIDDEN,
-          message: 'Admin access required',
+          message: "Admin access required",
         },
         timestamp: toISODateString(new Date()),
       };
@@ -322,13 +345,13 @@ router.get('/users', (req: Request, res: Response) => {
 
     return res.status(HTTP_STATUS.OK).json(response);
   } catch (error) {
-    logger.error('List users endpoint error', error as Error);
+    logger.error("List users endpoint error", error as Error);
 
     const response: ApiResponse<never> = {
       success: false,
       error: {
         code: ERROR_CODES.INTERNAL_ERROR,
-        message: 'Failed to list users',
+        message: "Failed to list users",
       },
       timestamp: toISODateString(new Date()),
     };
@@ -344,22 +367,25 @@ router.get('/users', (req: Request, res: Response) => {
 
 const CreateUserSchema = z.object({
   username: z.string().min(3).max(50),
-  pin: z.string().length(4).regex(/^\d{4}$/),
-  role: z.enum(['cashier', 'manager', 'admin']),
+  pin: z
+    .string()
+    .length(4)
+    .regex(/^\d{4}$/),
+  role: z.enum(["cashier", "manager", "admin"]),
   full_name: z.string().min(2).max(100),
-  location_id: z.string().optional().default('main'),
+  location_id: z.string().optional().default("main"),
 });
 
-router.post('/users', (req: Request, res: Response) => {
+router.post("/users", (req: Request, res: Response) => {
   try {
-    const sessionId = req.headers['x-session-id'] as string;
+    const sessionId = req.headers["x-session-id"] as string;
 
     if (!sessionId) {
       const response: ApiResponse<never> = {
         success: false,
         error: {
           code: ERROR_CODES.UNAUTHORIZED,
-          message: 'No session provided',
+          message: "No session provided",
         },
         timestamp: toISODateString(new Date()),
       };
@@ -368,12 +394,12 @@ router.post('/users', (req: Request, res: Response) => {
 
     const currentUser = authService.validateSession(sessionId);
 
-    if (!currentUser || !authService.hasRole(currentUser, 'admin')) {
+    if (!currentUser || !authService.hasRole(currentUser, "admin")) {
       const response: ApiResponse<never> = {
         success: false,
         error: {
           code: ERROR_CODES.FORBIDDEN,
-          message: 'Admin access required',
+          message: "Admin access required",
         },
         timestamp: toISODateString(new Date()),
       };
@@ -387,7 +413,7 @@ router.post('/users', (req: Request, res: Response) => {
         success: false,
         error: {
           code: ERROR_CODES.VALIDATION_ERROR,
-          message: 'Invalid user data',
+          message: "Invalid user data",
           details: validation.error.issues,
         },
         timestamp: toISODateString(new Date()),
@@ -397,14 +423,20 @@ router.post('/users', (req: Request, res: Response) => {
 
     const { username, pin, role, full_name, location_id } = validation.data;
 
-    const newUser = authService.createUser(username, pin, role, full_name, location_id);
+    const newUser = authService.createUser(
+      username,
+      pin,
+      role,
+      full_name,
+      location_id,
+    );
 
     if (!newUser) {
       const response: ApiResponse<never> = {
         success: false,
         error: {
           code: ERROR_CODES.VALIDATION_ERROR,
-          message: 'Username already exists',
+          message: "Username already exists",
         },
         timestamp: toISODateString(new Date()),
       };
@@ -419,13 +451,13 @@ router.post('/users', (req: Request, res: Response) => {
 
     return res.status(HTTP_STATUS.CREATED).json(response);
   } catch (error) {
-    logger.error('Create user endpoint error', error as Error);
+    logger.error("Create user endpoint error", error as Error);
 
     const response: ApiResponse<never> = {
       success: false,
       error: {
         code: ERROR_CODES.INTERNAL_ERROR,
-        message: 'Failed to create user',
+        message: "Failed to create user",
       },
       timestamp: toISODateString(new Date()),
     };

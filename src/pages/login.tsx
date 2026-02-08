@@ -1,24 +1,25 @@
 /**
- * Login Page
- * Staff authentication with username and PIN
+ * Login Page with Rate Limiting
+ * Shows remaining attempts and lockout messages
  */
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { useAuth } from '../lib/auth-context';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import { useAuth } from "../lib/auth-context";
 
 export default function Login() {
-  const [username, setUsername] = useState('');
-  const [pin, setPin] = useState('');
-  const [error, setError] = useState('');
+  const [username, setUsername] = useState("");
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [lockoutMessage, setLockoutMessage] = useState("");
   const router = useRouter();
   const { login, isAuthenticated } = useAuth();
 
   // Redirect if already logged in
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/');
+      router.push("/");
     }
   }, [isAuthenticated, router]);
 
@@ -33,34 +34,40 @@ export default function Login() {
   };
 
   const handleClear = () => {
-    setUsername('');
-    setPin('');
-    setError('');
+    setUsername("");
+    setPin("");
+    setError("");
+    setLockoutMessage("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!username) {
-      setError('Veuillez entrer votre nom d\'utilisateur');
+      setError("Veuillez entrer votre nom d'utilisateur");
       return;
     }
 
     if (pin.length !== 4) {
-      setError('Le code PIN doit contenir 4 chiffres');
+      setError("Le code PIN doit contenir 4 chiffres");
       return;
     }
 
     setLoading(true);
-    setError('');
+    setError("");
+    setLockoutMessage("");
 
-    const success = await login(username, pin);
+    const result = await login(username, pin);
 
-    if (success) {
-      router.push('/');
+    if (result === true) {
+      router.push("/");
+    } else if (typeof result === "string") {
+      // Lockout message
+      setLockoutMessage(result);
+      setPin("");
     } else {
-      setError('Nom d\'utilisateur ou code PIN incorrect');
-      setPin('');
+      setError("Nom d'utilisateur ou code PIN incorrect");
+      setPin("");
     }
 
     setLoading(false);
@@ -100,7 +107,7 @@ export default function Login() {
             <div className="pin-display">
               {[0, 1, 2, 3].map((i) => (
                 <div key={i} className="pin-dot">
-                  {pin.length > i ? '●' : '○'}
+                  {pin.length > i ? "●" : "○"}
                 </div>
               ))}
             </div>
@@ -129,7 +136,7 @@ export default function Login() {
             </button>
             <button
               type="button"
-              onClick={() => handlePinClick('0')}
+              onClick={() => handlePinClick("0")}
               className="pin-button"
               disabled={loading || pin.length >= 4}
             >
@@ -145,8 +152,13 @@ export default function Login() {
             </button>
           </div>
 
+          {/* Lockout Message (Critical - Red) */}
+          {lockoutMessage && (
+            <div className="lockout-message">🔒 {lockoutMessage}</div>
+          )}
+
           {/* Error Message */}
-          {error && <div className="error-message">{error}</div>}
+          {error && <div className="error-message">❌ {error}</div>}
 
           {/* Submit Button */}
           <button
@@ -154,14 +166,16 @@ export default function Login() {
             className="login-button"
             disabled={loading || !username || pin.length !== 4}
           >
-            {loading ? '⏳ Connexion...' : '🔓 Se connecter'}
+            {loading ? "⏳ Connexion..." : "🔓 Se connecter"}
           </button>
         </form>
 
-        {/* Default Credentials Info */}
-        <div className="info-box">
-          <p>👤 Compte par défaut: <strong>admin</strong></p>
-          <p>🔑 PIN: <strong>1234</strong></p>
+        {/* Security Info */}
+        <div className="security-info">
+          <p>
+            🔒 <strong>Sécurité:</strong> 3 tentatives maximum
+          </p>
+          <p>⏱️ Verrouillage: 5 minutes après échec</p>
         </div>
       </div>
 
@@ -323,6 +337,31 @@ export default function Login() {
           border-color: #d97706;
         }
 
+        .lockout-message {
+          background: #fef2f2;
+          color: #991b1b;
+          padding: 15px;
+          border-radius: 10px;
+          margin-bottom: 20px;
+          text-align: center;
+          font-weight: 700;
+          border: 3px solid #dc2626;
+          animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+          0%,
+          100% {
+            transform: translateX(0);
+          }
+          25% {
+            transform: translateX(-10px);
+          }
+          75% {
+            transform: translateX(10px);
+          }
+        }
+
         .error-message {
           background: #fee2e2;
           color: #dc2626;
@@ -359,8 +398,22 @@ export default function Login() {
           transform: none;
         }
 
+        .security-info {
+          margin-top: 20px;
+          padding: 12px;
+          background: #fef3c7;
+          border: 2px solid #fde68a;
+          border-radius: 10px;
+          font-size: 13px;
+          color: #92400e;
+        }
+
+        .security-info p {
+          margin: 5px 0;
+        }
+
         .info-box {
-          margin-top: 25px;
+          margin-top: 15px;
           padding: 15px;
           background: #f0f9ff;
           border: 2px solid #bae6fd;

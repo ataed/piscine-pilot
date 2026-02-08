@@ -401,6 +401,9 @@ export const ERROR_CODES = {
 
   /** Forbidden access (403) */
   FORBIDDEN: "FORBIDDEN",
+
+  
+    TOO_MANY_REQUESTS: 'TOO_MANY_REQUESTS',
 } as const;
 
 /**

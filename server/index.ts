@@ -71,7 +71,19 @@ const limiter = rateLimit({
   },
   skip: (req) => req.path === "/api/health",
 });
-
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes window
+  max: 50, // Allow 50 attempts per IP (high enough for humans, low enough for bots)
+  skipSuccessfulRequests: true,
+  // standardHeaders: true,//FOR PRODUCTION INTERNET FACING
+  message: {
+    success: false,
+    error: {
+      code: "TOO_MANY_REQUESTS",
+      message: "Too many login attempts from this kiosk. Please contact IT.",
+    },
+  },
+});
 app.use("/api/", limiter);
 
 // ============================================
@@ -114,7 +126,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // ============================================
 // AUTH ROUTES
 // ============================================
-
+app.use("/api/local/auth/login", authLimiter);
 app.use("/api/local/auth", authRoutes);
 
 // ============================================
