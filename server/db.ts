@@ -296,7 +296,7 @@ class DatabaseManager {
       const created_by = process.env.KIOSK_ID || "kiosk_001";
 
       // Generate timestamp (ISO 8601 UTC)
-      const created_at = toISODateString(new Date());
+      const created_at = new Date().toISOString();
 
       // Generate checksum for tamper detection
       const hash = this.generateChecksum({
@@ -309,8 +309,8 @@ class DatabaseManager {
       // Prepare statement (SQL injection proof)
       const stmt = this.db.prepare(`
         INSERT INTO transactions (
-          id, amount, type, payment_method, customer_name, notes, created_by, created_at, hash
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          id, amount, type, payment_method, customer_name, notes, created_by, created_at, hash,user_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       // Execute insert
@@ -324,6 +324,7 @@ class DatabaseManager {
         created_by,
         created_at,
         hash,
+        input.user_id || null,
       );
 
       // Retrieve created transaction

@@ -203,10 +203,15 @@ const safeStringRequired = (minLength: number, maxLength: number) =>
  * // Error: Invalid UUID v4 format
  * ```
  */
+/**
+ * UUID v4 validation schema.
+ */
 export const UUIDSchema = z
   .string({ message: "UUID must be a string" })
-  .uuid({ message: "Invalid UUID v4 format" });
-
+  .regex(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    { message: "Invalid UUID v4 format" },
+  );
 /**
  * ISO 8601 date-time string validation schema.
  *
@@ -222,9 +227,18 @@ export const UUIDSchema = z
  * // Error: Invalid datetime
  * ```
  */
+/**
+ * ISO 8601 date-time string validation schema.
+ */
 export const ISODateTimeSchema = z
   .string({ message: "Datetime must be a string" })
-  .datetime({ message: "Must be a valid ISO 8601 datetime string" });
+  .refine(
+    (val) => {
+      const date = new Date(val);
+      return !isNaN(date.getTime()) && val === date.toISOString();
+    },
+    { message: "Must be a valid ISO 8601 datetime string" },
+  );
 
 /**
  * Positive integer amount in cents validation schema.
@@ -250,11 +264,13 @@ export const ISODateTimeSchema = z
  * - Rounding inconsistencies in financial calculations
  * - Ambiguity in database storage
  */
+/**
+ * Positive integer amount in cents validation schema.
+ */
 export const AmountSchema = z
   .number({ message: "Amount must be a number" })
   .int({ message: "Amount must be an integer (cents)" })
   .positive({ message: "Amount must be positive" })
-  .finite({ message: "Amount must be finite" })
   .max(MAX_AMOUNT_CENTS, {
     message: `Amount too large (max ${MAX_AMOUNT_CENTS / 100} MAD)`,
   });
@@ -405,6 +421,12 @@ export const CreateTransactionSchema = z.object({
    * Sanitized to prevent XSS/injection attacks.
    */
   notes: safeString(MAX_NOTES_LENGTH),
+
+  /**
+   * Optional user ID who created this transaction.
+   * Used for audit tracking and accountability.
+   */
+  user_id: UUIDSchema.optional(),
 });
 
 /**

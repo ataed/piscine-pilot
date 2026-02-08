@@ -60,6 +60,7 @@ export default function Kiosk() {
             payment_method: paymentMethod,
             customer_name: customerName || undefined,
             notes: notes || undefined,
+            user_id: user?.id, // <-- Include user ID for audit tracking
           }),
         },
       );
@@ -67,7 +68,8 @@ export default function Kiosk() {
       const data = await response.json();
 
       if (data.success) {
-        setLastTransaction(data.data.transaction);
+        const transaction = data.data.transaction;
+        setLastTransaction(transaction);
         setShowReceipt(true);
         setMessage("✅ Transaction créée avec succès!");
 

@@ -135,6 +135,9 @@ export default function Admin() {
             <p className="subtitle">Gestion complète du système</p>
           </div>
           <div className="header-right">
+            <a href="/admin/users" className="btn-link">
+              👥 Utilisateurs
+            </a>
             <a href="/dashboard" className="btn-link">
               📊 Dashboard
             </a>
@@ -142,7 +145,7 @@ export default function Admin() {
               🏊 Kiosque
             </a>
           </div>
-          <UserHeader /> 
+          <UserHeader />
         </header>
 
         {/* Stats Overview */}

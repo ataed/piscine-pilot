@@ -13,6 +13,8 @@ export interface User {
   role: "cashier" | "manager" | "admin";
   full_name: string;
   location_id: string;
+  created_at?: string;
+  last_login_at?: string;
 }
 
 export interface Session {
@@ -379,12 +381,18 @@ export class AuthService {
   public listUsers(): User[] {
     try {
       const stmt = dbManager.getDb().prepare(`
-        SELECT id, username, role, full_name, location_id
-        FROM users
-        WHERE is_active = 1
-        ORDER BY created_at DESC
-      `);
-
+       SELECT 
+        id, 
+        username, 
+        role, 
+        full_name, 
+        location_id,
+        created_at,
+        last_login_at
+      FROM users
+      WHERE is_active = 1
+      ORDER BY created_at DESC
+    `);
       const users = stmt.all() as User[];
       return users;
     } catch (error) {

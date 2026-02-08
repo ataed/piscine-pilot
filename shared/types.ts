@@ -171,6 +171,8 @@ export interface CreateTransactionInput {
 
   /** Optional notes or description */
   notes?: string;
+  /** Optional user ID who created this transaction */
+  user_id?: string;
 }
 
 /**
@@ -402,8 +404,7 @@ export const ERROR_CODES = {
   /** Forbidden access (403) */
   FORBIDDEN: "FORBIDDEN",
 
-  
-    TOO_MANY_REQUESTS: 'TOO_MANY_REQUESTS',
+  TOO_MANY_REQUESTS: "TOO_MANY_REQUESTS",
 } as const;
 
 /**
